@@ -13,9 +13,9 @@ on:
 
 jobs:
   build:
-    name: Build NestJS Application
+    name: Build and Analyze NestJS Application
 
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
       - name: Checkout Repository
@@ -28,18 +28,45 @@ jobs:
           cache: npm
 
       - name: Display Node Version
+        shell: powershell
         run: |
           node -v
           npm -v
 
       - name: Install Dependencies
+        shell: powershell
         run: npm install
 
       - name: Build Application
+        shell: powershell
         run: npm run build
 
       - name: Run Tests
+        shell: powershell
         run: npm test
+
+      - name: Install Sonar Scanner
+        shell: powershell
+        run: npm install -g @sonar/scan
+
+      - name: Verify SonarQube URL
+        shell: powershell
+        env:
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        run: |
+          Write-Host "SONAR_HOST_URL = $env:SONAR_HOST_URL"
+          Invoke-WebRequest "$env:SONAR_HOST_URL/api/server/version"
+
+      - name: SonarQube Scan
+        shell: powershell
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        run: |
+          sonar `
+            -D"sonar.host.url=$env:SONAR_HOST_URL" `
+            -D"sonar.token=$env:SONAR_TOKEN" `
+            -D"sonar.projectKey=nest-typescript-starter"
 
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
