@@ -27,7 +27,7 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Display Node.js Version
+      - name: Display Node Version
         shell: powershell
         run: |
           node -v
@@ -61,14 +61,11 @@ jobs:
 
           Write-Host "SONAR_HOST_URL = $env:SONAR_HOST_URL"
 
-          try {
-            $response = Invoke-WebRequest -Uri "$env:SONAR_HOST_URL/api/server/version" -UseBasicParsing
-            Write-Host "SonarQube Version: $($response.Content)"
-          }
-          catch {
-            Write-Error $_
-            exit 1
-          }
+          $response = Invoke-WebRequest `
+            -Uri "$env:SONAR_HOST_URL/api/server/version" `
+            -UseBasicParsing
+
+          Write-Host "SonarQube Version: $($response.Content)"
 
       - name: SonarQube Scan
         shell: powershell
@@ -79,7 +76,7 @@ jobs:
           sonar `
             -D"sonar.host.url=$env:SONAR_HOST_URL" `
             -D"sonar.token=$env:SONAR_TOKEN" `
-            -D"sonar.projectKey=nest-typescript-starter"
+            -D"sonar.projectKey=typescript-starter"
 
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
