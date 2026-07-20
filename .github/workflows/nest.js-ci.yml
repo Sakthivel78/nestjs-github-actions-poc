@@ -27,7 +27,7 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Display Node Version
+      - name: Display Node.js Version
         shell: powershell
         run: |
           node -v
@@ -49,19 +49,32 @@ jobs:
         shell: powershell
         run: npm install -g @sonar/scan
 
-      - name: Verify SonarQube URL
+      - name: Verify SonarQube Configuration
         shell: powershell
         env:
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         run: |
+          if ([string]::IsNullOrWhiteSpace($env:SONAR_HOST_URL)) {
+            Write-Error "SONAR_HOST_URL secret is missing."
+            exit 1
+          }
+
           Write-Host "SONAR_HOST_URL = $env:SONAR_HOST_URL"
-          Invoke-WebRequest "$env:SONAR_HOST_URL/api/server/version"
+
+          try {
+            $response = Invoke-WebRequest -Uri "$env:SONAR_HOST_URL/api/server/version" -UseBasicParsing
+            Write-Host "SonarQube Version: $($response.Content)"
+          }
+          catch {
+            Write-Error $_
+            exit 1
+          }
 
       - name: SonarQube Scan
         shell: powershell
         env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
           sonar `
             -D"sonar.host.url=$env:SONAR_HOST_URL" `
